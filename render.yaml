@@ -3,6 +3,7 @@ services:
     name: groundsignal
     runtime: static
     rootDir: frontend
+    autoDeployTrigger: checksPass
     buildCommand: npm ci && npm run build
     staticPublishPath: ./dist
     envVars:
@@ -21,8 +22,10 @@ services:
 
   - type: web
     name: groundsignal-api
+    plan: free
     runtime: python
     rootDir: backend
+    autoDeployTrigger: checksPass
     buildCommand: pip install -e ".[tabpfn]"
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health

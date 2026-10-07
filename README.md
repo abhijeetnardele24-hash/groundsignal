@@ -72,7 +72,7 @@ flowchart LR
 | User-provided calibration labels | IndexedDB and request memory | Only when analysis is requested |
 | Predictions and corrections | IndexedDB | Predictions are returned by the API; corrections remain local |
 
-The API forbids unknown schema fields, limits request size and concurrency, rate-limits clients, enforces an inference timeout, restricts CORS, and returns defensive security headers. The full boundary is documented in [`docs/architecture.md`](docs/architecture.md).
+The API forbids unknown schema fields, limits request size and concurrency, rate-limits clients, enforces an inference timeout, restricts CORS, and returns defensive security headers. Rate-limited routes expose `RateLimit-*` budget metadata, and `429` responses include an accurate `Retry-After` value so clients can back off predictably. The full boundary is documented in [`docs/architecture.md`](docs/architecture.md).
 
 ## Repository map
 
@@ -203,7 +203,7 @@ python -m pytest -q
 python -m pip check
 ```
 
-Current local verification: **9 frontend tests passed, production PWA build passed, npm reported 0 vulnerabilities, 10 backend tests passed, and Python reported no broken requirements.** GitHub Actions repeats tests, the frontend build, and the production dependency audit on every push and pull request.
+Current local verification: **9 frontend tests passed, production PWA build passed, npm reported 0 vulnerabilities, 12 backend tests passed, and the isolated Python environment reported no broken requirements.** GitHub Actions repeats tests, the frontend build, and the production dependency audit on every push and pull request.
 
 ## Deploy on Render
 

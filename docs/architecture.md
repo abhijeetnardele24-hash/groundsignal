@@ -42,6 +42,20 @@ two known surface classes. It records average sample coverage, short windows,
 and low-coverage windows with every report. These checks describe evidence
 quality; they never certify that a path is safe or accessible.
 
+## API protection
+
+The public inference route rejects unknown fields and oversized declared
+payloads, limits concurrent model work, applies an inference timeout, and uses
+a per-client sliding-window request limit. Successful limited responses expose
+`RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`, and
+`RateLimit-Policy`. A rejected request returns `429` with an accurate
+`Retry-After` value. Expired client buckets are pruned periodically so the
+limiter does not retain inactive callers indefinitely.
+
+The service also restricts browser origins and returns no-store, no-referrer,
+content-sniffing, and browser-permission headers. It has no account, identity,
+location, database, or file-upload surface.
+
 ## Model behavior
 
 Each prediction includes a full class probability distribution. Confidence below

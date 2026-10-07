@@ -228,6 +228,7 @@ The complete talk track is in [`docs/demo-script.md`](docs/demo-script.md).
 
 ## Documentation
 
+- [`PROJECT_HANDOFF.md`](PROJECT_HANDOFF.md) — completion status, Render deployment plan, competition priorities, risks, and next-agent prompt
 - [`docs/product-brief.md`](docs/product-brief.md) — product thesis and differentiation
 - [`docs/architecture.md`](docs/architecture.md) — data flow, privacy boundary, and model behavior
 - [`docs/field-test-protocol.md`](docs/field-test-protocol.md) — reproducible outdoor evidence collection

@@ -32,6 +32,16 @@ export interface FeatureVector {
 
 export interface CalibrationRow extends FeatureVector { label: SurfaceLabel }
 
+export interface EvidenceQuality {
+  level: "good" | "watch" | "poor";
+  label: string;
+  averageCoverage: number;
+  lowCoverageWindows: number;
+  shortWindows: number;
+  totalWindows: number;
+  warnings: string[];
+}
+
 export interface Prediction {
   window_id: string;
   label: SurfaceLabel;
@@ -55,6 +65,7 @@ export interface FieldReport {
   calibration: CalibrationRow[];
   predictions: Prediction[];
   features: FeatureVector[];
+  evidenceQuality?: EvidenceQuality;
   privacy: string;
   disclaimer: string;
   analysisNote?: string;

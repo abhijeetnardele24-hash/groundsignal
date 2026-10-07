@@ -36,9 +36,10 @@ Traditional path data is usually static, generic, or tied to a map. But a surfac
 | Pocket Mode | A low-distraction recording UI designed to disappear into a pocket during the walk. |
 | Open model path | Supports TabPFN for competition inference and a deterministic nearest-centroid baseline for offline/demo resilience. |
 | Honest uncertainty | Returns class probabilities, confidence, and an explicit abstention state below the documented threshold. |
+| Field-readiness gate | Requires usable coverage across two personally calibrated surfaces and exposes weak capture evidence before interpretation. |
 | Human correction loop | Lets users confirm, relabel, or discard windows and deliberately promote reviewed evidence into later calibration. |
 | Local-first ledger | Keeps raw sessions and reports in IndexedDB, caps retention, and lets users reopen recent work. |
-| Portable evidence | Exports CSV and JSON containing provenance, features, model output, final labels, and review status. |
+| Portable evidence | Exports CSV and JSON containing provenance, capture quality, features, model output, final labels, and review status. |
 | Judge-safe demo | Provides a clearly marked synthetic walk so the full experience can be evaluated without a phone sensor. |
 | Installable PWA | Includes a manifest and service worker for an app-like, offline-ready field experience. |
 
@@ -202,7 +203,7 @@ python -m pytest -q
 python -m pip check
 ```
 
-Current local verification: **3 frontend tests passed, production PWA build passed, npm reported 0 vulnerabilities, 10 backend tests passed, and Python reported no broken requirements.** GitHub Actions repeats tests, the frontend build, and the production dependency audit on every push and pull request.
+Current local verification: **9 frontend tests passed, production PWA build passed, npm reported 0 vulnerabilities, 10 backend tests passed, and Python reported no broken requirements.** GitHub Actions repeats tests, the frontend build, and the production dependency audit on every push and pull request.
 
 ## Deploy on Render
 

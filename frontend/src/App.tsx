@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
+  Activity,
   ArrowLeft,
   ArrowRight,
   Check,
@@ -21,6 +22,7 @@ import {
 } from "lucide-react";
 import { analyzeSession } from "./lib/api";
 import { extractFeatures, simulateMotion } from "./lib/features";
+import { assessCalibrationQuality, assessEvidenceQuality, assessLiveSignal } from "./lib/quality";
 import { recordMotion, requestMotionPermission } from "./lib/sensor";
 import { clearAllData, deleteSession, loadCalibration, loadReports, saveCalibration, saveSession, storageEstimate, updateSessionReport } from "./lib/storage";
 import type {
@@ -124,7 +126,9 @@ export default function App() {
   }, []);
 
   const calibratedLabels = useMemo(() => new Set(calibration.map((row) => row.label)), [calibration]);
-  const isCalibrated = calibration.length >= 8 && calibratedLabels.size >= 2;
+  const calibrationQuality = useMemo(() => assessCalibrationQuality(calibration), [calibration]);
+  const liveSignal = useMemo(() => assessLiveSignal(samplesRef.current), [sampleCount]);
+  const isCalibrated = calibrationQuality.ready;
 
   async function beginCapture(kind: CaptureKind) {
     setNotice(null);
@@ -202,7 +206,7 @@ export default function App() {
     setBusy(true);
     const sessionId = `session_${crypto.randomUUID().replaceAll("-", "")}`;
     try {
-      const nextReport = await analyzeSession({
+      const analyzedReport = await analyzeSession({
         sessionId,
         source,
         mobilityMode,
@@ -210,6 +214,7 @@ export default function App() {
         calibration: calibrationRows,
         audit,
       });
+      const nextReport = { ...analyzedReport, evidenceQuality: assessEvidenceQuality(audit) };
       setReport(nextReport);
       await saveSession(nextReport, raw);
       setRecentReports((current) => [nextReport, ...current.filter((item) => item.sessionId !== nextReport.sessionId)].slice(0, 10));
@@ -275,10 +280,10 @@ export default function App() {
       download(`groundsignal-${report.sessionId}.json`, JSON.stringify(report, null, 2), "application/json");
       return;
     }
-    const header = "window_id,start_ms,duration_ms,predicted_label,final_label,review_status,confidence,abstained,accel_rms,jerk_rms,gyro_rms";
+    const header = "window_id,start_ms,duration_ms,predicted_label,final_label,review_status,confidence,abstained,sample_coverage,evidence_quality,accel_rms,jerk_rms,gyro_rms";
     const rows = report.features.map((feature, index) => {
       const prediction = report.predictions[index];
-      return [feature.window_id, feature.start_ms, feature.duration_ms, prediction?.label, prediction?.review?.finalLabel ?? prediction?.label, prediction?.review?.status ?? "unreviewed", prediction?.confidence.toFixed(4), prediction?.abstained, feature.accel_rms.toFixed(4), feature.jerk_rms.toFixed(4), feature.gyro_rms.toFixed(4)].join(",");
+      return [feature.window_id, feature.start_ms, feature.duration_ms, prediction?.label, prediction?.review?.finalLabel ?? prediction?.label, prediction?.review?.status ?? "unreviewed", prediction?.confidence.toFixed(4), prediction?.abstained, feature.sample_coverage.toFixed(4), report.evidenceQuality?.level ?? "unknown", feature.accel_rms.toFixed(4), feature.jerk_rms.toFixed(4), feature.gyro_rms.toFixed(4)].join(",");
     });
     download(`groundsignal-${report.sessionId}.csv`, [header, ...rows].join("\n"), "text/csv");
   }
@@ -378,6 +383,16 @@ export default function App() {
             </label>
           </div>
 
+          <div className={`readiness-card readiness-card--${calibrationQuality.level}`}>
+            <div className="card-heading"><span>Baseline readiness</span><StatusPill tone={isCalibrated ? "good" : "warn"}>{isCalibrated ? "Ready" : "Building"}</StatusPill></div>
+            <div className="readiness-metrics">
+              <div><span>Qualified surfaces</span><strong>{calibrationQuality.qualifiedClasses}/2</strong></div>
+              <div><span>Usable windows</span><strong>{calibrationQuality.usableWindows}/8</strong></div>
+              <div><span>Coverage</span><strong>{Math.round(calibrationQuality.averageCoverage * 100)}%</strong></div>
+            </div>
+            {calibrationQuality.warnings[0] && <p>{calibrationQuality.warnings[0]}</p>}
+          </div>
+
           <div className="surface-list" role="list">
             {labels.map((label, index) => {
               const done = calibratedLabels.has(label.value);
@@ -416,6 +431,7 @@ export default function App() {
               <div className="timer"><strong>{formatDuration(elapsed)}</strong><span>Elapsed</span></div>
             </div>
             <div className="sample-count">{sampleCount.toLocaleString()} readings</div>
+            <div className={`signal-health signal-health--${liveSignal.level}`}><Activity size={14} /><span><strong>{liveSignal.label}</strong><small>{liveSignal.detail}</small></span></div>
             <p>{captureKind === "calibration" ? `Move naturally across a known ${activeLabel} surface.` : "Pocket or mount the phone securely, then move naturally along the path."}</p>
           </div>
           <div className="stop-zone">
@@ -438,6 +454,7 @@ function ReportScreen({ report, onClose, onExport, onReview, onPromote, onDelete
   const uncertain = report.predictions.filter((prediction) => prediction.abstained && !prediction.review);
   const average = report.predictions.reduce((sum, prediction) => sum + prediction.confidence, 0) / Math.max(report.predictions.length, 1);
   const reviewed = report.predictions.filter((prediction) => prediction.review && prediction.review.status !== "dismissed").length;
+  const evidenceQuality = report.evidenceQuality ?? assessEvidenceQuality(report.features);
   const dominant = Object.entries(report.predictions.reduce<Record<string, number>>((counts, prediction) => ({ ...counts, [prediction.label]: (counts[prediction.label] ?? 0) + 1 }), {})).sort((a, b) => b[1] - a[1])[0]?.[0] as SurfaceLabel | undefined;
   return (
     <section className="screen report">
@@ -455,6 +472,11 @@ function ReportScreen({ report, onClose, onExport, onReview, onPromote, onDelete
       </div>
 
       {report.analysisNote && <div className="notice" role="status"><Info size={18} /><span>{report.analysisNote}</span></div>}
+
+      <div className={`evidence-card evidence-card--${evidenceQuality.level}`}>
+        <Activity size={19} />
+        <div><span className="eyebrow">Evidence quality</span><h3>{evidenceQuality.label}</h3><p>{evidenceQuality.warnings[0] ?? `${Math.round(evidenceQuality.averageCoverage * 100)}% average sensor coverage across ${evidenceQuality.totalWindows} windows.`}</p></div>
+      </div>
 
       <div className="report-copy">
         <h3>{dominant ? `${labelCopy[dominant]} dominated this route.` : "The route needs more evidence."}</h3>

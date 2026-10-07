@@ -8,7 +8,7 @@ services:
     staticPublishPath: ./dist
     envVars:
       - key: VITE_API_URL
-        sync: false
+        value: https://groundsignal-api.onrender.com
     headers:
       - path: /*
         name: X-Content-Type-Options
@@ -39,6 +39,6 @@ services:
       - key: MAX_CONCURRENT_ANALYSES
         value: 2
       - key: ALLOWED_ORIGINS
-        sync: false
+        value: https://groundsignal-rlmh.onrender.com
       - key: TABPFN_TOKEN
         sync: false

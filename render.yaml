@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: groundsignal
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        sync: false
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer
+      - path: /*
+        name: Permissions-Policy
+        value: geolocation=(), camera=(), microphone=()
+
+  - type: web
+    name: groundsignal-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -e ".[tabpfn]"
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: ENVIRONMENT
+        value: production
+      - key: MODEL_PROVIDER
+        value: tabpfn
+      - key: MAX_CONCURRENT_ANALYSES
+        value: 2
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: TABPFN_TOKEN
+        sync: false

@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+__pycache__/
+.pytest_cache/
+.venv/
+.superdesign/tmp/
+.superdesign/init/
+.agents/
